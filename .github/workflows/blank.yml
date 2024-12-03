@@ -1,0 +1,65 @@
+# This workflow will build a Java project with Maven, and cache/restore any dependencies to improve the workflow execution time
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-maven
+
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+name: Maven CI 2.0 super
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Paso 1: Clonar el repositorio
+      - name: Checkout del código
+        uses: actions/checkout@v4 # Actualizado a la última versión
+
+      # Paso 2: Configurar JDK
+      - name: Set up JDK 11
+        uses: actions/setup-java@v3
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          cache: maven 
+
+      # 3. Ejecutar los plugins
+      - name: Build and Test
+        run: mvn clean verify
+
+      # 4. Ejecutar Checkstyle
+      - name: Checkstyle Analysis
+        run: mvn checkstyle:checkstyle
+        continue-on-error: true
+
+      # 5. Ejecutar SpotBugs
+      - name: SpotBugs Analysis
+        run: mvn spotbugs:spotbugs
+        continue-on-error: true
+
+      # 6. Generar reporte de cobertura con JaCoCo
+      - name: Generate Coverage Report
+        run: mvn jacoco:report
+
+      - name: List generated files
+        run: ls -R target
+        
+      # Paso 7: Subir artefactos generados
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Maven-Reports
+          path: |
+            target/site/jacoco/jacoco.xml
+            target/checkstyle-result.xml
+            target/spotbugsXml.xml
